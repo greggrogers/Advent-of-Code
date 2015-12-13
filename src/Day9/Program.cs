@@ -1,8 +1,9 @@
-﻿using System;
-using System.Collections;
+﻿using Business.Helper;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace Day9
 {
@@ -15,11 +16,8 @@ namespace Day9
 
     public class Route
     {
-        public ArrayList Destinations { get; set; }
-        public int TotalDistance
-        {
-            get { return 0; }
-        }
+        public IList<string> Destinations { get; set; }
+        public int TotalDistance { get; set; }
     }
 
     public class Program
@@ -34,7 +32,7 @@ namespace Day9
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
-            var filePath = string.Concat(Business.Helper.Utils.GetInputFilePath(), InputFileName);
+            var filePath = string.Concat(Utils.GetInputFilePath(), InputFileName);
 
             Legs = new List<JourneyLeg>();
 
@@ -49,9 +47,14 @@ namespace Day9
             }
 
             Routes = PermutateRouteDestinations(GetUniqueDestinations());
+            Routes = Routes.OrderBy(r => r.TotalDistance).ToList();
 
-            //Console.WriteLine(string.Concat("Part 1 - The number of characters of code for string literals minus the number of characters in memory for the values of the strings: ", (TotalCharsMemoryLength - TotalCharsCodeLength)));
+            Console.WriteLine(string.Concat("Part 1 - What is the distance of the shortest route?: ", Routes[0].TotalDistance));
 
+            Routes = Routes.OrderByDescending(r => r.TotalDistance).ToList();
+
+            Console.WriteLine(string.Concat("Part 2 - What is the distance of the longest route?: ", Routes[0].TotalDistance));
+            
             stopWatch.Stop();
 
             var ts = stopWatch.Elapsed;
@@ -95,7 +98,25 @@ namespace Day9
         {
             var routes = new List<Route>();
 
+            var permutationEngine = new Permutations<string>();
+            foreach (var permutation in permutationEngine.GeneratePermutations(destinations))
+            {
+                var route = new Route();
 
+                for (int i = 0; i < (permutation.Count - 1); i++)
+                {
+                    var from = permutation[i];
+                    var to = permutation[i + 1];
+
+                    var leg = Legs.FirstOrDefault(l => (l.From == from && l.To == to) || (l.From == to && l.To == from));
+                    if (leg == null) continue;
+
+                    route.TotalDistance += leg.Distance;
+                }
+
+                route.Destinations = permutation;
+                routes.Add(route);
+            }
 
             return routes;
         }
